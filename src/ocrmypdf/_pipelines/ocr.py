@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import logging.handlers
 from collections.abc import Sequence
 from functools import partial
@@ -54,7 +53,7 @@ log = logging.getLogger(__name__)
 
 
 def _image_to_ocr_text(
-    page_context: PageContext, ocr_image_out: Path
+        page_context: PageContext, ocr_image_out: Path
 ) -> tuple[Path, Path]:
     """Run OCR engine on image to create OCR PDF and text file."""
     options = page_context.options
@@ -137,6 +136,30 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
 
     # Merge layers to one single pdf
     pdf = ocrgraft.finalize()
+    tmp_folder_path = pdf.parent.resolve()
+    summary_file_pattern = "*_summary.txt"  # Pattern to match files
+    content_file_pattern = "*_ocr_hocr.txt"
+    # Read all matching files
+    file_summary_content = ""
+    output_name = options.output_file.split(".")[0]
+    page_index = 1
+    for file_path in sorted(tmp_folder_path.glob(summary_file_pattern)):
+        with open(file_path, "r", encoding="utf-8") as file:
+            content = file.read()
+            file_summary_content += ("\nPAGE " + str(page_index) + ": \n" + content)
+            page_index += 1
+    print(file_summary_content)
+    with open(output_name + "_summary.txt", "w", encoding="utf-8") as file:
+        file.write(file_summary_content)
+
+    file_content = ""
+    for file_path in sorted(tmp_folder_path.glob(content_file_pattern)):
+        with open(file_path, "r", encoding="utf-8") as file:
+            content = file.read()
+            file_content += content + "\n"
+    print(file_content)
+    with open(output_name + ".txt", "w", encoding="utf-8") as file:
+        file.write(file_content)
 
     messages: Sequence[str] = []
     if options.output_type != 'none':

@@ -22,6 +22,7 @@ from ocrmypdf.exceptions import (
 )
 from ocrmypdf.pluginspec import OrientationConfidence
 from ocrmypdf.subprocess import get_version, run
+from ocrmypdf.llm_text_improve.PhoGPTModel import PhoGPTModel
 
 log = logging.getLogger(__name__)
 
@@ -275,18 +276,19 @@ def _generate_null_hocr(output_hocr: Path, output_text: Path, image: Path) -> No
 
 
 def generate_hocr(
-    *,
-    input_file: Path,
-    output_hocr: Path,
-    output_text: Path,
-    languages: list[str],
-    engine_mode: int,
-    tessconfig: list[str],
-    timeout: float,
-    pagesegmode: int,
-    thresholding: int,
-    user_words,
-    user_patterns,
+        *,
+        input_file: Path,
+        output_hocr: Path,
+        output_text: Path,
+        languages: list[str],
+        engine_mode: int,
+        tessconfig: list[str],
+        timeout: float,
+        pagesegmode: int,
+        thresholding: int,
+        user_words,
+        user_patterns,
+        summary_text_path: Path = None
 ) -> None:
     """Generate a hOCR file, which must be converted to PDF."""
     prefix = output_hocr.with_suffix('')
@@ -312,6 +314,26 @@ def generate_hocr(
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout
+        model = PhoGPTModel.get_instance()
+        try:
+            with open(output_text, "r",encoding="utf-8") as file:
+                content = file.read()
+            corrected_content = model.correct_grammar(content)
+            with open(output_text, "w",encoding="utf-8") as file:
+                file.write(corrected_content)
+
+        except FileNotFoundError:
+            print("The " + output_text.name + " file does not exist.")
+
+        try:
+            if summary_text_path is not None:
+                summary_content = model.summary(content)
+                with open(summary_text_path, "w",encoding="utf-8") as file:
+                    file.write(summary_content)
+        except FileNotFoundError:
+            print("The " + summary_text_path.name + " file does not exist.")
+
+
     except TimeoutExpired:
         # Generate a HOCR file with no recognized text if tesseract times out
         # Temporary workaround to hocrTransform not being able to function if

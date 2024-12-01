@@ -264,7 +264,7 @@ class TesseractOcrEngine(OcrEngine):
         )
 
     @staticmethod
-    def generate_hocr(input_file, output_hocr, output_text, options):
+    def generate_hocr(input_file, output_hocr, output_text, options, summary_hocr=None):
         tesseract.generate_hocr(
             input_file=input_file,
             output_hocr=output_hocr,
@@ -277,6 +277,7 @@ class TesseractOcrEngine(OcrEngine):
             thresholding=options.tesseract_thresholding,
             user_words=options.user_words,
             user_patterns=options.user_patterns,
+            summary_text_path=summary_hocr
         )
 
     @staticmethod

@@ -197,6 +197,9 @@ def test_blank_input_pdf(resources, outpdf):
     result = run_ocrmypdf_api(resources / 'blank.pdf', outpdf)
     assert result == ExitCode.ok
 
+def test_simple_input_pdf(resources, outpdf):
+    result = run_ocrmypdf_api('input.pdf', "output.pdf")
+    assert result == ExitCode.ok
 
 def test_force_ocr_on_pdf_with_no_images(resources, no_outpdf):
     # As a correctness test, make sure that --force-ocr on a PDF with no

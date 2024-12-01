@@ -664,6 +664,7 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
     """Run the OCR engine and generate hOCR output."""
     hocr_out = page_context.get_path('ocr_hocr.hocr')
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
+    hocr_summary_text_out=page_context.get_path('ocr_hocr_summary.txt')
     options = page_context.options
 
     ocr_engine = page_context.plugin_manager.hook.get_ocr_engine()
@@ -672,6 +673,7 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
         output_hocr=hocr_out,
         output_text=hocr_text_out,
         options=options,
+        summary_hocr=hocr_summary_text_out,
     )
     return hocr_out, hocr_text_out
 
