@@ -314,7 +314,7 @@ def generate_hocr(
     try:
         p = run(args_tesseract, stdout=PIPE, stderr=STDOUT, timeout=timeout, check=True)
         stdout = p.stdout
-        model = PhoGPTModel.get_instance()
+        model = PhoGPTModel()
         try:
             with open(output_text, "r",encoding="utf-8") as file:
                 content = file.read()
@@ -327,7 +327,7 @@ def generate_hocr(
 
         try:
             if summary_text_path is not None:
-                summary_content = model.summary(content)
+                summary_content = model.summarize(content)
                 with open(summary_text_path, "w",encoding="utf-8") as file:
                     file.write(summary_content)
         except FileNotFoundError:

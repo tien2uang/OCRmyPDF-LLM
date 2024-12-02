@@ -21,8 +21,9 @@ dependencies = [
   "Pillow>=10.0.1",
   "pluggy>=1",
   "rich>=13",
-  "torch",
-  "transformers"
+  "torch>=2.5.1",
+  "transformers>=4.46.3",
+  "einops>=0.8.0",
 ]
 authors = [{ name = "James R. Barlow", email = "james@purplerock.ca" }]
 classifiers = [

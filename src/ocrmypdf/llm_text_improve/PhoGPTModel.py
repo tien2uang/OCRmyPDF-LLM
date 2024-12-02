@@ -1,76 +1,84 @@
-
 import torch
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
-
 PROMPT_TEMPLATE = "### Câu hỏi: {instruction}\n### Trả lời:"
 
 
-class PhoGPTModel:
-    _model_instance = None
-    _tokenizer_instance = None
+class SingletonMeta(type):
+    """A metaclass for creating Singleton classes."""
+    _instances = {}
 
-    @staticmethod
-    def get_instance(*args, **kwargs):
-        # Ensure the model is instantiated only once
-        if PhoGPTModel._model_instance is None:
-            PhoGPTModel._model_instance = PhoGPTModel(*args, **kwargs)
-        return PhoGPTModel._model_instance
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            instance = super().__call__(*args, **kwargs)
+            cls._instances[cls] = instance
+        return cls._instances[cls]
 
-    @staticmethod
-    def get_tokenizer_instance(*args, **kwargs):
-        # Ensure the tokenizer is instantiated only once
-        if PhoGPTModel._tokenizer_instance is None:
-            PhoGPTModel._tokenizer_instance = AutoTokenizer.from_pretrained("vinai/PhoGPT-4B-Chat",
-                                                                            trust_remote_code=True)
-        return PhoGPTModel._tokenizer_instance
 
-    def __init__(self):
-        if PhoGPTModel._model_instance is not None:
-            raise Exception("This class is a singleton!")
-        model_path = "vinai/PhoGPT-4B-Chat"
+class PhoGPTModel(metaclass=SingletonMeta):
+    def __init__(self, model_path="vinai/PhoGPT-4B-Chat", device="cuda", dtype=torch.bfloat16):
+        self.model_path = model_path
+        self.device = device
+        self.dtype = dtype
+        self.tokenizer = self._load_tokenizer()
+        self.model = self._load_model()
 
-        # Load model configuration
-        config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
-        config.init_device = "cuda"
+    def _load_tokenizer(self):
+        """Load the tokenizer."""
+        print("Loading tokenizer...")
+        return AutoTokenizer.from_pretrained(self.model_path, trust_remote_code=True)
 
-        # Load the model
+    def _load_model(self):
+        """Load the model."""
+        print("Loading model...")
+        config = AutoConfig.from_pretrained(self.model_path, trust_remote_code=True)
+        config.init_device = self.device
         model = AutoModelForCausalLM.from_pretrained(
-            model_path, config=config, torch_dtype=torch.bfloat16, trust_remote_code=True
-        )
+            self.model_path, 
+            config=config, 
+            torch_dtype=self.dtype, 
+            trust_remote_code=True
+        ).to("cuda")
+        model.eval()
+        return model
 
-        # Move model to the correct device
-        model = model.to("cuda")
+    def generate_response(self, instruction):
+        """Generate a response for the given instruction."""
 
-        PhoGPTModel._model_instance = model  # Assign the model instance
-
-    def generate_response(self, instruction, _tokenizer_instance=None):
         input_prompt = PROMPT_TEMPLATE.format_map({"instruction": instruction})
-
-        # Tokenize the input
-        input_ids = self.get_tokenizer_instance()(input_prompt, return_tensors="pt")
-
-        # Generate the model's output
-        outputs = self.get_instance().generate(
-            input_ids=input_ids["input_ids"].to("cuda"),
+        input_ids = self.tokenizer(input_prompt, return_tensors="pt")
+        outputs = self.model.generate(
+            inputs=input_ids["input_ids"].to("cuda"),
             attention_mask=input_ids["attention_mask"].to("cuda"),
             do_sample=True,
             temperature=1.0,
             top_k=50,
             top_p=0.9,
             max_new_tokens=1024,
-            eos_token_id=self.get_tokenizer_instance().eos_token_id,
-            pad_token_id=self.get_tokenizer_instance().pad_token_id
+            eos_token_id=self.tokenizer.eos_token_id,
+            pad_token_id=self.tokenizer.pad_token_id
         )
 
-        # Decode the output
-        response = self.get_tokenizer_instance().batch_decode(outputs, skip_special_tokens=True)[0]
-        response = response.split("### Trả lời:")[1]
-        return response
+        response = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        return response.split("### Trả lời:")[1]
 
-    def summary(self, content):
-        instruction = "Tóm tắt đoạn văn:\n" + content
+    
+    def summarize(self, content):
+        """Summarize the given content."""
+        print("Summarizing...")
+        instruction = f"Tóm tắt nội dung văn bản sau. Câu trả lời bắt buộc bắt đầu bằng 'Nội dung này nói về':\n{content}"
         return self.generate_response(instruction)
+
 
     def correct_grammar(self, content):
-        instruction = "Sửa chính tả:\n" + content
+        """Correct grammar of the given content."""
+        print("Correcting grammar...")
+        instruction = f"Sửa lỗi chính tả:\n{content}"
         return self.generate_response(instruction)
+
+
+if __name__ == "__main__":
+    model = PhoGPTModel()
+    content ="Hà Nội là thành phô cổ kính với nhiểu di tích lịch sử. Mỗi năm, hàng triệu du khách đén thăm và chim ngưỡng vẻ đẹp của thành phố này. Nơi đây có những con phồ cổ và những quán cà phê rất nỗi tiếng. Dù thời tiết có thay đổi, nhưng Hà Nội vẫ luôn thu hút du khách từ khắp nơi."
+    corrected_content = model.correct_grammar(content)
+    model = PhoGPTModel()
+    print(model.summarize(corrected_content))
