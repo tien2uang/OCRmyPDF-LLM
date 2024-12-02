@@ -108,7 +108,7 @@ exclude_lines = [
 minversion = "6.0"
 norecursedirs = ["lib", ".pc", ".git", "venv", "output", "cache", "resources"]
 testpaths = ["tests"]
-addopts = "-n auto"
+#addopts = "-n auto"
 markers = ["slow"]
 filterwarnings = [
   "ignore:.*XMLParser.*:DeprecationWarning",

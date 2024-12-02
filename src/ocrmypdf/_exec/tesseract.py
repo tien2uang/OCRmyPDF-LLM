@@ -318,7 +318,7 @@ def generate_hocr(
         try:
             with open(output_text, "r",encoding="utf-8") as file:
                 content = file.read()
-            corrected_content = model.correct_grammar(content)
+            corrected_content = model.correct_grammar(content,languages)
             with open(output_text, "w",encoding="utf-8") as file:
                 file.write(corrected_content)
 
@@ -327,7 +327,7 @@ def generate_hocr(
 
         try:
             if summary_text_path is not None:
-                summary_content = model.summarize(content)
+                summary_content = model.summarize(content,languages)
                 with open(summary_text_path, "w",encoding="utf-8") as file:
                     file.write(summary_content)
         except FileNotFoundError:
