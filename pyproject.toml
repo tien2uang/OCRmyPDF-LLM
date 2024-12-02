@@ -22,7 +22,7 @@ dependencies = [
   "pluggy>=1",
   "rich>=13",
   "torch",
-  "transformer"
+  "transformers"
 ]
 authors = [{ name = "James R. Barlow", email = "james@purplerock.ca" }]
 classifiers = [
